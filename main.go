@@ -1,29 +1,38 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"time"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
-type model int
+type model struct {
+	requestView textinput.Model
+	resultView  textinput.Model
+}
 
-type tickMsg time.Time
+func newTextInput(placeholder string) textinput.Model {
+	ti := textinput.New()
+	ti.Placeholder = placeholder
+	ti.Focus()
+	ti.CharLimit = 156
+	ti.Width = 20
+	return ti
+}
 
-func main() {
-	p := tea.NewProgram(model(5), tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
-		log.Fatal(err)
+func NewModel() model {
+	return model{
+		requestView: newTextInput("Request"),
+		resultView:  newTextInput("Result"),
 	}
 }
 
 func (m model) Init() tea.Cmd {
-	return tick()
+	return nil
 }
 
-// Update implements [tea.Model].
 func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := message.(type) {
 	case tea.KeyMsg:
@@ -31,24 +40,19 @@ func (m model) Update(message tea.Msg) (tea.Model, tea.Cmd) {
 		case "q", "ctrl+c":
 			return m, tea.Quit
 		}
-	case tickMsg:
-		m--
-		if m <= 0 {
-			return m, tea.Quit
-		}
-		return m, tick()
 	}
 
 	return m, nil
 }
 
-// View implements [tea.Model].
 func (m model) View() string {
-	return fmt.Sprintf("\n\n	Hi. This Program will exit in %d seconds", m)
+	return lipgloss.JoinHorizontal(lipgloss.Top, m.requestView.View(), m.resultView.View())
 }
 
-func tick() tea.Cmd {
-	return tea.Tick(time.Second, func(t time.Time) tea.Msg {
-		return tickMsg(t)
-	})
+func main() {
+	model := NewModel()
+	p := tea.NewProgram(model, tea.WithAltScreen())
+	if _, err := p.Run(); err != nil {
+		log.Fatal(err)
+	}
 }
